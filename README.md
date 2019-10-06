@@ -1,4 +1,4 @@
-## Sku（stock-keeping-unit: 最小度量单位) 算法的实现
+## SKU（stock-keeping-unit: 最小度量单位) 算法的实现
 
 ### 基于博文：
  - link: https://www.cnblogs.com/xiaocaiyuxiaoniao/p/9790221.html 
