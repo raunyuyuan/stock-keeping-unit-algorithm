@@ -31,31 +31,27 @@ const getSkuMcl = (skuData) => {
 
 // 生成对应dom的数据
 function getMapDomData (skuGroups, mcl){
-    let btnDisabledData = []
-    let clickedBtnData = []
-
+    const mapDomData = []
     skuGroups.forEach((item, idx) => {
-        btnDisabledData.push([])
-        clickedBtnData.push([])
+        mapDomData.push([])
         item.list.forEach((item, idx1) => {
-            btnDisabledData[idx].push(!Boolean(mcl[item.value]))
-            clickedBtnData[idx].push({value: item.value, clicked: false})
+            mapDomData[idx].push({value: item.value, clicked: false, disabled: !Boolean(mcl[item.value])})
         })
     })
-    return {btnDisabledData, clickedBtnData}
+    return {mapDomData}
 }
 
 
 // 点击后重新设置dom样式
-const setDomStyle = (doms, btnDisabledData, clickedBtnData) => {
-    doms.forEach((itemList, idx) => {
-        itemList.forEach((btn, idx1) => {
-            if(btnDisabledData[idx][idx1]) {
+const setDomStyle = (doms, mapDomData) => {
+    doms.forEach((itemList, lay) => {
+        itemList.forEach((btn, btnIdx) => {
+            if(mapDomData[lay][btnIdx].disabled) {
                 btn.attr('disabled', 'true')
             } else {
                 btn.removeAttr('disabled')
             }
-            if(clickedBtnData[idx][idx1].clicked) {
+            if(mapDomData[lay][btnIdx].clicked) {
                 btn.addClass('clicked')
             } else {
                 btn.removeClass('clicked')
@@ -65,7 +61,7 @@ const setDomStyle = (doms, btnDisabledData, clickedBtnData) => {
 }
 
 // 生成最初dom
-const initDom = ($box, btnDisabledData) => {
+const initDom = ($box, mapDomData) => {
     let doms = []
     skuGroups.forEach((item, idx) => {
         const $dom =  $(
@@ -79,7 +75,7 @@ const initDom = ($box, btnDisabledData) => {
                 <input
                     type="button"
                     class="sku"
-                    ${btnDisabledData[idx][idx1] ? 'disabled' : ''}
+                    ${mapDomData[idx][idx1].disabled ? 'disabled' : ''}
                     data-idx=${idx}
                     data-idx1="${idx1}"
                     value="${item1.value}"
@@ -92,4 +88,32 @@ const initDom = ($box, btnDisabledData) => {
         $dom.appendTo($box)
     })
     return doms
+}
+
+
+const getClickValueLay = (mapDomData, isClick, currentClickLay) => {
+    const clickedValues = []
+    const unClickLay = []
+    mapDomData.forEach((item, lay) => {
+        // 如果是取消的话，就需要将之前的组合给计算出来，
+        if (!isClick) {
+            item.forEach(item => {
+                if (item.clicked) clickedValues.push({value: item.value, idx: lay});
+            })
+        // 不是取消记录没有点过的属性行
+        } else if (lay !== Number(currentClickLay)) {
+            unClickLay.push(lay);
+        }
+    })
+    return {clickedValues, unClickLay}
+}
+
+const switchClick =(currentClickLay, currentClickBtnIdx, mapDomData) => {
+    mapDomData[currentClickLay].forEach((item, btnIdx) => {
+        if (btnIdx === currentClickBtnIdx) {
+            item.clicked = !item.clicked
+        } else {
+            item.clicked = false
+        }
+    })
 }
