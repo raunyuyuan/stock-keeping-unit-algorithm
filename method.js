@@ -90,7 +90,7 @@ const initDom = ($box, mapDomData) => {
     return doms
 }
 
-
+// 获得未点击的行索引，以及点击过的值，根据isClick做不同的操作
 const getClickValueLay = (mapDomData, isClick, currentClickLay) => {
     const clickedValues = []
     const unClickLay = []
@@ -106,6 +106,43 @@ const getClickValueLay = (mapDomData, isClick, currentClickLay) => {
         }
     })
     return {clickedValues, unClickLay}
+}
+
+const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, unClickLay, currentClick, mcl) => {
+    // 是选择的时候重新遍历所有没有选择的属性行 查找与现在的组合一起是否存在 存在为true
+    if (isClick && clickedValues.length !== mapDomData.length) {
+        unClickLay.forEach(lay => {
+            let a = [{value: currentClick.value, idx: currentClickLay}]
+            let addAttr = {value: '', idx: lay}
+            a.push(addAttr)
+            // 通过idx排序后 将其他行属性放入所在的位置
+            a = a.sort((a, b) => a.idx - b.idx)
+            mapDomData[lay].forEach((item, idx) => {
+                addAttr.value = item.value
+                const skuGroup = a.map(item => item.value).join('-')
+                item.disabled = !Boolean(mcl[skuGroup])
+            })
+            
+        });
+    }
+    /** 
+     * 取消的时候需要判断已选择的行的非选属性的状态
+     * 
+    */
+    if (!isClick && clickedValues.length !== 0) {
+        mapDomData[currentClickLay].forEach((item) => {
+            let a = [...clickedValues]
+            a.push({value: item.value, idx: currentClickLay})
+            const skuGroup =  a.sort((a, b) => a.idx - b.idx).map(item => item.value).join('-')
+            item.disabled = !Boolean(mcl[skuGroup])
+        });
+    }
+    // 取消全部选择
+    if (clickedValues.length === 0 && !isClick) {
+        mapDomData.forEach(list => {
+            list.forEach(item => item.disabled = !Boolean(mcl[item.value]))
+        })
+    }
 }
 
 const switchClick =(currentClickLay, currentClickBtnIdx, mapDomData) => {
