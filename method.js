@@ -146,7 +146,7 @@ const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, cur
      * 2. init整张数据，模拟click 2次，这个结果绝对正确，需要考虑复杂度
      * 3. 如果不模拟click，首先当前行需要与其他已经选择行组合做比较, 当前行正确
      *        问题在于如何恢复其他已选择行受到当前行的影响
-     *         让其他行之间互相比较，不在表中的不做组合，已经disable的不恢复，这里需要将n * n的全部init一次。。（等于去模拟了一次click）
+     *         让其他行之间互相比较，不在表中的不做组合，已经disable的不恢复，这里需要将n * n的全部init一次。。（约等于去模拟了一次click）
     */
     if (!isClick && clickedValues.length !== 0) {
         // 将没选的行和已选的组合一下
@@ -160,29 +160,30 @@ const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, cur
                 item.disabled = !(skuGroup in mcl)
             });
         })
-        // 只剩一行时将这一行reinit
-        if (clickedValues.length === 1) {
-            mapDomData[clickedValues[0].idx].forEach(btn => {
-                btn.disabled = !(btn.value in mcl)
-            })
         // 将当前行点击过的行互相判断一下
-        } else {
-            mapDomData.forEach((item, lay) => {
-                if (clickedValues.every(item => item.idx !== lay)) return
-                clickedValues.forEach(clickedBtn => {
-                    if (lay === clickedBtn.idx) return
-                    item.forEach(btn => {
-                        if (!(btn.value in mcl)) return
-                        let a = [clickedBtn.value]
-                        const method = lay > clickedBtn.idx ? 'push' : 'unshift'
-                        a[method](btn.value)
-                        const skuGroup = a.join('-')
-                        console.log(skuGroup, 2)
-                        btn.disabled = !(skuGroup in mcl)
-                    })
-                })
+        clickedValues.forEach((item) => {
+            let a  = []
+            let isSame = false
+            clickedValues.forEach(clickedBtn => {
+                if (item.idx === clickedBtn.idx) return isSame = true
+                a.push(clickedBtn)
             })
-        }
+            if (clickedValues.length === 1) {
+                mapDomData[item.idx].forEach(btn => {
+                    btn.disabled = !(btn.value in mcl)
+                })
+                return
+            }
+            if (isSame) return
+            mapDomData[item.idx].forEach(btn => {
+                if (!(btn.value in mcl)) return
+                a.push({value: btn.value, idx: item.idx})
+                const skuGroup = a.sort((a, b) => a.idx - b.idx).map(item => item.value).join('-')
+                console.log(skuGroup, 2)
+                btn.disabled = !(skuGroup in mcl)
+            })
+            
+        })
     }
     // 取消全部选择
     if (clickedValues.length === 0 && !isClick) {
