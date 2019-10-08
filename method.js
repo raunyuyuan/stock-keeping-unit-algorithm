@@ -91,56 +91,97 @@ const initDom = ($box, mapDomData) => {
 }
 
 // 获得未点击的行索引，以及点击过的值，根据isClick做不同的操作
-const getClickValueLay = (mapDomData, isClick, currentClickLay) => {
+const getClickValues = (mapDomData) => {
     const clickedValues = []
     const unClickLay = []
     mapDomData.forEach((item, lay) => {
-        // 如果是取消的话，就需要将之前的组合给计算出来，
-        if (!isClick) {
-            item.forEach(item => {
-                if (item.clicked) clickedValues.push({value: item.value, idx: lay});
-            })
-        // 不是取消记录没有点过的属性行
-        } else if (lay !== Number(currentClickLay)) {
-            unClickLay.push(lay);
-        }
+        let click = false
+        item.forEach(item => {
+            if (item.clicked) {
+                click = true
+                clickedValues.push({value: item.value, idx: lay});
+            }
+        })
+        if (!click) unClickLay.push(lay);
     })
     return {clickedValues, unClickLay}
 }
 
-const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, unClickLay, currentClick, mcl) => {
-    // 是选择的时候重新遍历所有没有选择的属性行 查找与现在的组合一起是否存在 存在为true
-    if (isClick && clickedValues.length !== mapDomData.length) {
-        unClickLay.forEach(lay => {
-            let a = [{value: currentClick.value, idx: currentClickLay}]
-            let addAttr = {value: '', idx: lay}
-            a.push(addAttr)
-            // 通过idx排序后 将其他行属性放入所在的位置
-            a = a.sort((a, b) => a.idx - b.idx)
-            mapDomData[lay].forEach((item, idx) => {
-                addAttr.value = item.value
+const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, currentClick, mcl, unClickLay) => {
+    // 选择的时候重新遍历所有除自己以外的属性行 查找与现在的组合一起是否存在 存在为true
+    if (isClick) {
+        // 组合一起后与没有点击过的行每一项进行比较
+        unClickLay.forEach((lay) => {
+            mapDomData[lay].forEach(item => {
+                // 去掉已经不在的
+                if (item.disable) return
+                let a = [...clickedValues, {value: item.value, idx: lay}]
+                a.sort((a, b) => a.idx - b.idx)
                 const skuGroup = a.map(item => item.value).join('-')
-                item.disabled = !Boolean(mcl[skuGroup])
+                item.disabled = !(skuGroup in mcl)
             })
-            
         });
+        // 与已经选择所有行互相进行组合
+        clickedValues.forEach(clickedBtn => {
+            if (clickedBtn.idx !== currentClickLay) {
+                mapDomData[clickedBtn.idx].forEach(btn => {
+                    if (btn.disabled) return
+                    const a = [btn.value]
+                    const method = currentClickLay > clickedBtn.idx ? 'push' : 'unshift'
+                    a[method](currentClick.value)
+                    const skuGroup = a.join('-')
+                    btn.disabled = !(skuGroup in mcl)
+                })
+                
+            }
+        })
     }
-    /** 
-     * 取消的时候需要判断已选择的行的非选属性的状态
-     * 
+     /** 
+     * 取消的时候需要返回以前的状态
+     * 这里init这张表 然后重新对选择每一项做组合
+     * 最好做制表 维护一张历史记录的表
+     * 制表其实也存在一个问题
     */
     if (!isClick && clickedValues.length !== 0) {
-        mapDomData[currentClickLay].forEach((item) => {
-            let a = [...clickedValues]
-            a.push({value: item.value, idx: currentClickLay})
-            const skuGroup =  a.sort((a, b) => a.idx - b.idx).map(item => item.value).join('-')
-            item.disabled = !Boolean(mcl[skuGroup])
-        });
+        // 将没选的行和已选的组合一下
+        unClickLay.forEach(lay => {
+            mapDomData[lay].forEach((item) => {
+                // 去掉已经不在的
+                if (!(item.value in mcl)) return
+                let a = [...clickedValues, {value: item.value, idx: currentClickLay}]
+                a.sort((a, b) => a.idx - b.idx)
+                const skuGroup = a.map(item => item.value).join('-')
+                item.disabled = !(skuGroup in mcl)
+            });
+        })
+        // 只剩一行时将这一行reinit
+        if (clickedValues.length === 1) {
+            mapDomData[clickedValues[0].idx].forEach(btn => {
+                btn.disabled = !(btn.value in mcl)
+            })
+        // 将当前行点击过的行互相判断一下
+        } else {
+            mapDomData.forEach((item, lay) => {
+                if (clickedValues.every(item => item.idx !== lay)) return
+                clickedValues.forEach(clickedBtn => {
+                    if (lay === clickedBtn.idx) return
+                    item.forEach(btn => {
+                        if (!(btn.value in mcl)) return
+                        let a = [clickedBtn.value]
+                        const method = lay > clickedBtn.idx ? 'push' : 'unshift'
+                        a[method](btn.value)
+                        const skuGroup = a.join('-')
+                        console.log(skuGroup, 2)
+                        btn.disabled = !(skuGroup in mcl)
+                    })
+                })
+            })
+        }
     }
     // 取消全部选择
     if (clickedValues.length === 0 && !isClick) {
         mapDomData.forEach(list => {
-            list.forEach(item => item.disabled = !Boolean(mcl[item.value]))
+            list.forEach(item => item.disabled = !(item.value in mcl))
         })
     }
 }

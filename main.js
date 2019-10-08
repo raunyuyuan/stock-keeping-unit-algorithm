@@ -10,6 +10,9 @@ const skuData = [
     {skuId: '200', price: '10', stock: '20'},
     {skuId: '111', price: '20', stock: '15'},
     {skuId: '000', price: '30', stock: '10'},
+    {skuId: '011', price: '20', stock: '15'},
+    {skuId: '001', price: '20', stock: '15'},
+    {skuId: '010', price: '20', stock: '15'}
 ]
 
 $(document).ready(function() {
@@ -18,6 +21,7 @@ $(document).ready(function() {
     // 生成最短路径表
     console.time('init mcl')
     let mcl = getSkuMcl(skuData)
+    console.log(mcl)
     console.timeEnd('init mcl')
     // 获得与dom对应的数据
     const {mapDomData} = getMapDomData(skuGroups, mcl)
@@ -34,8 +38,8 @@ $(document).ready(function() {
         const isClick = !currentClick.clicked;
         switchClick(idx, idx1, mapDomData)
         // 获得点击的值相关层级等数据
-        const {clickedValues, unClickLay} = getClickValueLay(mapDomData, isClick, idx)
-        switchDisabled(isClick, clickedValues, mapDomData, idx, unClickLay, currentClick, mcl)
+        const {clickedValues, unClickLay} = getClickValues(mapDomData)
+        switchDisabled(isClick, clickedValues, mapDomData, idx, currentClick, mcl, unClickLay)
         
         console.timeEnd('click change')
         // 刷新dom
