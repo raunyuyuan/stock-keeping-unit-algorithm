@@ -140,7 +140,7 @@ const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, cur
      * 取消的时候需要返回以前的状态
      * 这里init这张表 然后重新对选择每一项做组合
      * 最好做制表 维护一张历史记录的表
-     * 制表其实也存在一个问题
+     * 制表其实也存在一个问题,选择1 => 2 => 3，突然取消2表里面没有2的记录
     */
     if (!isClick && clickedValues.length !== 0) {
         // 将没选的行和已选的组合一下
