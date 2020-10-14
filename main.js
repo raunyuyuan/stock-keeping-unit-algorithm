@@ -1,4 +1,3 @@
-let clickSkuEvent = void(0)
 // 模拟数据
 const skuGroups = [
     {name: '颜色', key: 'color', list: [{value: '蓝色', id: 0}, {value: '白色', id: 1}, {value: '红色', id: 2}]},
@@ -20,9 +19,9 @@ $(document).ready(function() {
     // $divGroup.append('<div>123</div>'
     // 生成最短路径表
     console.time('init mcl')
-    let mcl = getSkuMcl(skuData)
+    let mcl = getSkuMcl(skuData, skuGroups)
     console.log(mcl)
-    console.timeEnd('init mcl')
+    console.timeEnd('init mcl:')
     // 获得与dom对应的数据
     const {mapDomData} = getMapDomData(skuGroups, mcl)
     // 生成最初的Dom

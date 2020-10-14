@@ -1,18 +1,19 @@
 // 初始化sku最短路径表
-const getSkuMcl = (skuData) => {
+const getSkuMcl = (skuData, skuGroups) => {
     let existSkus = {}
     skuData.forEach(item => {
         let skuGroup = item.skuId.split('')
         if (Number(item.stock) === 0) return
+        // ID => name
         let existSku = skuGroup.map((id, idx) => {
-            return skuGroups[idx].list.find(item => Number(item.id) === Number(id)).value
+            const findItem = skuGroups[idx].list.find(item => Number(item.id) === Number(id))
+            return findItem.value
         })
         // 求幂集 后一项依赖前一项的组合
         let ps = ['']
-        existSku.forEach((skuAttr, i) => {
-            ps.forEach((item1, j) => {
-                const prevItem = ps[j]
-                const exitKey = prevItem + (prevItem === '' ? '': '-') + skuAttr
+        existSku.forEach((skuAttr) => {
+            ps.forEach((prevV) => {
+                const exitKey = prevV + (prevV === '' ? '' : '-') + skuAttr
                 ps.push(exitKey)
                 if (!existSkus[exitKey]) {
                     existSkus[exitKey] = [
@@ -21,7 +22,7 @@ const getSkuMcl = (skuData) => {
                 } else {
                     existSkus[exitKey].push(item)
                 }
-                
+
             })
         })
     })
@@ -30,15 +31,21 @@ const getSkuMcl = (skuData) => {
 
 
 // 生成对应dom的数据
-function getMapDomData (skuGroups, mcl){
+function getMapDomData(skuGroups, mcl) {
     const mapDomData = []
     skuGroups.forEach((item, idx) => {
         mapDomData.push([])
         item.list.forEach((item, idx1) => {
-            mapDomData[idx].push({value: item.value, clicked: false, disabled: !Boolean(mcl[item.value])})
+            mapDomData[idx].push({
+                value: item.value,
+                clicked: false,
+                disabled: !Boolean(mcl[item.value])
+            })
         })
     })
-    return {mapDomData}
+    return {
+        mapDomData
+    }
 }
 
 
@@ -46,12 +53,12 @@ function getMapDomData (skuGroups, mcl){
 const setDomStyle = (doms, mapDomData) => {
     doms.forEach((itemList, lay) => {
         itemList.forEach((btn, btnIdx) => {
-            if(mapDomData[lay][btnIdx].disabled) {
+            if (mapDomData[lay][btnIdx].disabled) {
                 btn.attr('disabled', 'true')
             } else {
                 btn.removeAttr('disabled')
             }
-            if(mapDomData[lay][btnIdx].clicked) {
+            if (mapDomData[lay][btnIdx].clicked) {
                 btn.addClass('clicked')
             } else {
                 btn.removeClass('clicked')
@@ -64,13 +71,13 @@ const setDomStyle = (doms, mapDomData) => {
 const initDom = ($box, mapDomData) => {
     let doms = []
     skuGroups.forEach((item, idx) => {
-        const $dom =  $(
+        const $dom = $(
             `<div class='attr-item'>
                 ${item.name}:
             </div>`
         );
         let len = doms.push([])
-        item.list.forEach((item1, idx1)=> {
+        item.list.forEach((item1, idx1) => {
             let $listItem = $(`
                 <input
                     type="button"
@@ -99,12 +106,18 @@ const getClickValues = (mapDomData) => {
         item.forEach(item => {
             if (item.clicked) {
                 click = true
-                clickedValues.push({value: item.value, idx: lay});
+                clickedValues.push({
+                    value: item.value,
+                    idx: lay
+                });
             }
         })
         if (!click) unClickLay.push(lay);
     })
-    return {clickedValues, unClickLay}
+    return {
+        clickedValues,
+        unClickLay
+    }
 }
 
 const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, currentClick, mcl, unClickLay) => {
@@ -115,7 +128,10 @@ const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, cur
             mapDomData[lay].forEach(item => {
                 // 去掉已经不在的
                 if (item.disable) return
-                let a = [...clickedValues, {value: item.value, idx: lay}]
+                let a = [...clickedValues, {
+                    value: item.value,
+                    idx: lay
+                }]
                 a.sort((a, b) => a.idx - b.idx)
                 const skuGroup = a.map(item => item.value).join('-')
                 item.disabled = !(skuGroup in mcl)
@@ -132,12 +148,12 @@ const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, cur
                     const skuGroup = a.join('-')
                     btn.disabled = !(skuGroup in mcl)
                 })
-                
+
             }
         })
     }
-     /** 
-      * TODO
+    /** 
+     * TODO
      * 取消的时候需要返回以前的状态
      * 最好做制表 维护一张历史记录的表
      * 制表其实也存在一个问题,选择1 => 2 => 3，突然取消2表里面没有1，3组合的记录
@@ -147,22 +163,25 @@ const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, cur
      * 3. 如果不模拟click，首先当前行需要与其他已经选择行组合做比较, 当前行正确
      *        问题在于如何恢复其他已选择行受到当前行的影响
      *         让其他行之间互相比较，不在表中的不做组合，已经disable的不恢复，这里需要将n * n的全部init一次。。（约等于去模拟了一次click）
-    */
+     */
     if (!isClick && clickedValues.length !== 0) {
         // 将没选的行和已选的组合一下
         unClickLay.forEach(lay => {
             mapDomData[lay].forEach((item) => {
-                // 去掉已经不在的
-                if (!(item.value in mcl)) return
-                let a = [...clickedValues, {value: item.value, idx: currentClickLay}]
+                let a = [...clickedValues, {
+                    value: item.value,
+                    idx: lay
+                }]
+                console.log(a)
                 a.sort((a, b) => a.idx - b.idx)
                 const skuGroup = a.map(item => item.value).join('-')
+                console.log(skuGroup)
                 item.disabled = !(skuGroup in mcl)
             });
         })
         // 将当前行点击过的行互相判断一下
         clickedValues.forEach((item) => {
-            let a  = []
+            let a = []
             let isSame = false
             clickedValues.forEach(clickedBtn => {
                 if (item.idx === clickedBtn.idx) return isSame = true
@@ -177,12 +196,15 @@ const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, cur
             if (isSame) return
             mapDomData[item.idx].forEach(btn => {
                 if (!(btn.value in mcl)) return
-                a.push({value: btn.value, idx: item.idx})
+                a.push({
+                    value: btn.value,
+                    idx: item.idx
+                })
                 const skuGroup = a.sort((a, b) => a.idx - b.idx).map(item => item.value).join('-')
                 console.log(skuGroup, 2)
                 btn.disabled = !(skuGroup in mcl)
             })
-            
+
         })
     }
     // 取消全部选择
@@ -193,7 +215,7 @@ const switchDisabled = (isClick, clickedValues, mapDomData, currentClickLay, cur
     }
 }
 
-const switchClick =(currentClickLay, currentClickBtnIdx, mapDomData) => {
+const switchClick = (currentClickLay, currentClickBtnIdx, mapDomData) => {
     mapDomData[currentClickLay].forEach((item, btnIdx) => {
         if (btnIdx === currentClickBtnIdx) {
             item.clicked = !item.clicked
